@@ -2,7 +2,7 @@
 
 ## ADS-B Hobbyist Aircraft State Archive using [Bento](https://warpstreamlabs.github.io/bento/) and [DuckDB](https://duckdb.org/)
 
-Collects live ADS-B aircraft state from an ultrafeeder (or any readsb-based feeder), batches it into time windows, and writes compressed Parquet files partitioned by hour. Query the results locally with DuckDB — no cloud, no cluster.
+Collects live ADS-B aircraft state from an ultrafeeder (or any readsb-based feeder), batches it into time windows, and writes compressed Parquet files partitioned by hour. Query the results locally with DuckDB - no cloud, no cluster.
 
 ```
 ultrafeeder :30047 (JSON stream)
@@ -42,7 +42,9 @@ docker run --net=host --rm \
   ghcr.io/warpstreamlabs/bento:1.17.0
 ```
 
-Bento will start collecting immediately. By default it uses a **15-minute tumbling window** — your first Parquet file will appear after the first window closes. This is configured with the `buffer.system_window.size` option in `bento-config.yaml`
+Bento will start collecting immediately. By default it uses a **15-minute tumbling window**, your first Parquet file will appear after the first window closes (15min intervals past the hour). This is configured with the `buffer.system_window.size` option in `bento-config.yaml`. 
+
+Normally, in the "real" world, Parquet file size should be kept between 256MB to 1GB for best performance. With your own ADS-B data feed you won't get any where near this size for each hour partition. To increase the file size increase the tumbling window up to `1h`. But make sure you are not going to blow the Pi's memory out, eg: `docker stats` to see RAM usage of the container. 
 
 To run in the background:
 ```bash
@@ -96,7 +98,7 @@ sudo mv duckdb /usr/local/bin/
 
 ### Create a persistent view
 
-Create a DuckDB database file once — it stores only the view definition, not the data:
+Create a DuckDB database file once, it stores only the view definition, not the data:
 
 ```bash
 duckdb ~/aircraft.duckdb
