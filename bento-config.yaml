@@ -1,0 +1,199 @@
+# Config fields, showing default values
+
+http:
+  address: "0.0.0.0:4195"
+  enabled: true
+
+input:
+  label: "readsb_tcp_stream"
+  socket:
+    network: "tcp" # No default (required)
+    address: "localhost:30047"
+    auto_replay_nacks: true
+    scanner:
+      lines: {}
+
+
+# Accumulates raw messages by event time (this.now), flushes one batch per hour.
+# parquet_encode then collapses that batch to a single Parquet file in the pipeline.
+buffer:
+  system_window:
+    timestamp_mapping: root = this.now
+    size: 15m
+
+pipeline:
+  processors:
+   
+    - mapping: |
+        root = match {
+          (this.hex | "") == ""      => deleted()
+          (this.now | null) == null  => deleted()
+          _                          => {}
+        }
+
+        root.time = this.now.number()
+        root.hex  = this.hex.string()
+        root.hour = ((this.now.number() / 3600).floor()) * 3600
+
+        root.type   = this.type | null
+        root.flight = this.flight.trim().catch(null)
+        root.alt_baro_ft = if (this.alt_baro | null) != null && this.alt_baro.type() != "string" { this.alt_baro.number().round() } else { null }
+        root.on_ground   = if (this.alt_baro | null) != null { this.alt_baro.type() == "string" } else { null }
+
+        root.alt_geom = if (this.alt_geom | null) != null { this.alt_geom.number().round() } else { null }
+
+        root.gs   = if (this.gs   | null) != null { this.gs.number() }          else { null }
+        root.ias  = if (this.ias  | null) != null { this.ias.number().round() }  else { null }
+        root.tas  = if (this.tas  | null) != null { this.tas.number().round() }  else { null }
+        root.mach = if (this.mach | null) != null { this.mach.number() }         else { null }
+
+        root.track        = if (this.track        | null) != null { this.track.number() }        else { null }
+        root.track_rate   = if (this.track_rate   | null) != null { this.track_rate.number() }   else { null }
+        root.roll         = if (this.roll         | null) != null { this.roll.number() }         else { null }
+        root.mag_heading  = if (this.mag_heading  | null) != null { this.mag_heading.number() }  else { null }
+        root.true_heading = if (this.true_heading | null) != null { this.true_heading.number() } else { null }
+
+        root.baro_rate = if (this.baro_rate | null) != null { this.baro_rate.number().round() } else { null }
+        root.geom_rate = if (this.geom_rate | null) != null { this.geom_rate.number().round() } else { null }
+
+        root.squawk    = this.squawk    | null
+        root.emergency = this.emergency | null
+        root.category  = this.category  | null
+        root.alert     = if (this.alert | null) != null { this.alert.number().round() } else { null }
+        root.spi       = if (this.spi   | null) != null { this.spi.number().round() }   else { null }
+
+        root.nav_qnh          = if (this.nav_qnh          | null) != null { this.nav_qnh.number() }                  else { null }
+        root.nav_altitude_mcp = if (this.nav_altitude_mcp | null) != null { this.nav_altitude_mcp.number().round() } else { null }
+        root.nav_altitude_fms = if (this.nav_altitude_fms | null) != null { this.nav_altitude_fms.number().round() } else { null }
+        root.nav_heading      = if (this.nav_heading      | null) != null { this.nav_heading.number() }               else { null }
+        root.nav_modes        = this.nav_modes | null
+
+        root.lat      = if (this.lat      | null) != null { this.lat.number() }           else { null }
+        root.lon      = if (this.lon      | null) != null { this.lon.number() }           else { null }
+        root.nic      = if (this.nic      | null) != null { this.nic.number().round() }      else { null }
+        root.rc       = if (this.rc       | null) != null { this.rc.number().round() }       else { null }
+        root.seen_pos = if (this.seen_pos | null) != null { this.seen_pos.number() }         else { null }
+        root.version  = if (this.version  | null) != null { this.version.number().round() }  else { null }
+        root.nic_baro = if (this.nic_baro | null) != null { this.nic_baro.number().round() } else { null }
+        root.nac_p    = if (this.nac_p    | null) != null { this.nac_p.number().round() }    else { null }
+        root.nac_v    = if (this.nac_v    | null) != null { this.nac_v.number().round() }    else { null }
+        root.sil      = if (this.sil      | null) != null { this.sil.number().round() }      else { null }
+        root.sil_type = this.sil_type | null
+        root.gva      = if (this.gva | null) != null { this.gva.number().round() } else { null }
+        root.sda      = if (this.sda | null) != null { this.sda.number().round() } else { null }
+        root.rr_lat   = if (this.rr_lat | null) != null { this.rr_lat.number() }   else { null }
+        root.rr_lon   = if (this.rr_lon | null) != null { this.rr_lon.number() }   else { null }
+
+        root.mlat = this.mlat | null
+        root.tisb = this.tisb | null
+
+        root.messages = if (this.messages | null) != null { this.messages.number().round() } else { null }
+        root.seen     = if (this.seen     | null) != null { this.seen.number() }              else { null }
+        root.rssi     = if (this.rssi     | null) != null { this.rssi.number() }              else { null }
+
+        root.wd  = if (this.wd  | null) != null { this.wd.number().round() }  else { null }
+        root.ws  = if (this.ws  | null) != null { this.ws.number().round() }  else { null }
+        root.oat = if (this.oat | null) != null { this.oat.number().round() } else { null }
+        root.tat = if (this.tat | null) != null { this.tat.number().round() } else { null }
+
+        root.gps_ok_before = if (this.gpsOkBefore | null) != null { this.gpsOkBefore.number() } else { null }
+
+        # Flattened: parquet_encode doesn't support nested records
+        root.last_pos_lat      = this.lastPosition.lat.catch(null)
+        root.last_pos_lon      = this.lastPosition.lon.catch(null)
+        root.last_pos_nic      = if (this.lastPosition.nic | null) != null { this.lastPosition.nic.number().round() } else { null }
+        root.last_pos_rc       = if (this.lastPosition.rc  | null) != null { this.lastPosition.rc.number().round() }  else { null }
+        root.last_pos_seen_pos = this.lastPosition.seen_pos.catch(null)
+
+        root.registration = this.r       | null
+        root.ac_type      = this.t       | null
+        root.ac_desc      = this.desc    | null
+        root.db_flags     = if (this.dbFlags | null) != null { this.dbFlags.number().round() } else { null }
+
+        meta hour = ((this.now.number() / 3600).floor()) * 3600
+
+    # Collapses the entire window batch into a single Parquet-encoded message.
+    - parquet_encode:
+        default_compression: zstd
+        schema:
+          - {name: time,             type: DOUBLE}
+          - {name: hex,              type: BYTE_ARRAY}
+          - {name: hour,             type: INT64}
+          - {name: type,             type: BYTE_ARRAY,  optional: true}
+          - {name: flight,           type: BYTE_ARRAY,  optional: true}
+          - {name: alt_baro_ft,      type: INT32,       optional: true}
+          - {name: on_ground,        type: BOOLEAN,     optional: true}
+          - {name: alt_geom,         type: INT32,       optional: true}
+          - {name: gs,               type: DOUBLE,      optional: true}
+          - {name: ias,              type: INT32,       optional: true}
+          - {name: tas,              type: INT32,       optional: true}
+          - {name: mach,             type: DOUBLE,      optional: true}
+          - {name: track,            type: DOUBLE,      optional: true}
+          - {name: track_rate,       type: DOUBLE,      optional: true}
+          - {name: roll,             type: DOUBLE,      optional: true}
+          - {name: mag_heading,      type: DOUBLE,      optional: true}
+          - {name: true_heading,     type: DOUBLE,      optional: true}
+          - {name: baro_rate,        type: INT32,       optional: true}
+          - {name: geom_rate,        type: INT32,       optional: true}
+          - {name: squawk,           type: BYTE_ARRAY,  optional: true}
+          - {name: emergency,        type: BYTE_ARRAY,  optional: true}
+          - {name: category,         type: BYTE_ARRAY,  optional: true}
+          - {name: alert,            type: INT32,       optional: true}
+          - {name: spi,              type: INT32,       optional: true}
+          - {name: nav_qnh,          type: DOUBLE,      optional: true}
+          - {name: nav_altitude_mcp, type: INT32,       optional: true}
+          - {name: nav_altitude_fms, type: INT32,       optional: true}
+          - {name: nav_heading,      type: DOUBLE,      optional: true}
+          - name: nav_modes
+            type: LIST
+            optional: true
+            fields:
+              - {name: element, type: UTF8}
+          - {name: lat,              type: DOUBLE,      optional: true}
+          - {name: lon,              type: DOUBLE,      optional: true}
+          - {name: nic,              type: INT32,       optional: true}
+          - {name: rc,               type: INT32,       optional: true}
+          - {name: seen_pos,         type: DOUBLE,      optional: true}
+          - {name: version,          type: INT32,       optional: true}
+          - {name: nic_baro,         type: INT32,       optional: true}
+          - {name: nac_p,            type: INT32,       optional: true}
+          - {name: nac_v,            type: INT32,       optional: true}
+          - {name: sil,              type: INT32,       optional: true}
+          - {name: sil_type,         type: BYTE_ARRAY,  optional: true}
+          - {name: gva,              type: INT32,       optional: true}
+          - {name: sda,              type: INT32,       optional: true}
+          - {name: rr_lat,           type: DOUBLE,      optional: true}
+          - {name: rr_lon,           type: DOUBLE,      optional: true}
+          - name: mlat
+            type: LIST
+            optional: true
+            fields:
+              - {name: element, type: UTF8}
+          - name: tisb
+            type: LIST
+            optional: true
+            fields:
+              - {name: element, type: UTF8}
+          - {name: messages,         type: INT64,       optional: true}
+          - {name: seen,             type: DOUBLE,      optional: true}
+          - {name: rssi,             type: DOUBLE,      optional: true}
+          - {name: wd,               type: INT32,       optional: true}
+          - {name: ws,               type: INT32,       optional: true}
+          - {name: oat,              type: INT32,       optional: true}
+          - {name: tat,              type: INT32,       optional: true}
+          - {name: gps_ok_before,    type: DOUBLE,      optional: true}
+          - {name: last_pos_lat,     type: DOUBLE,      optional: true}
+          - {name: last_pos_lon,     type: DOUBLE,      optional: true}
+          - {name: last_pos_nic,     type: INT32,       optional: true}
+          - {name: last_pos_rc,      type: INT32,       optional: true}
+          - {name: last_pos_seen_pos,type: DOUBLE,      optional: true}
+          - {name: registration,     type: BYTE_ARRAY,  optional: true}
+          - {name: ac_type,          type: BYTE_ARRAY,  optional: true}
+          - {name: ac_desc,          type: BYTE_ARRAY,  optional: true}
+          - {name: db_flags,         type: INT64,       optional: true}
+
+output:
+  file:
+    path: /data/bento/aircraft/hour=${! meta("hour") }/part-${! count("aircraft_parts") }.parquet
+    codec: all-bytes
+    
